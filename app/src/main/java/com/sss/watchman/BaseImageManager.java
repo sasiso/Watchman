@@ -1,6 +1,6 @@
 package com.sss.watchman;
 
 
-abstract public class BaseImageManaer{
-    abstract TakePhoto();
+abstract public class BaseImageManager{
+    abstract boolean TakePhoto();
 }
