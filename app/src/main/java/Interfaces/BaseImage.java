@@ -1,4 +1,4 @@
-package com.sss.watchman;
+package Interfaces;
 
 import java.util.List;
 import java.util.Vector;
@@ -7,7 +7,7 @@ import java.util.Vector;
  * Created by sss on 10-Feb-17.
  */
 
-public abstract class BaseImage <T>{
+public interface BaseImage <T>{
     abstract int getHeight();
     abstract int getWidth();
     abstract List<T> getRow(final int index);

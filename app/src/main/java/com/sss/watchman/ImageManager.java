@@ -17,6 +17,7 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -39,6 +40,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.TreeMap;
+
+import utils.ImageSaver;
 
 /**
  * This class implements image capture service
@@ -109,6 +112,26 @@ public class ImageManager {
         ORIENTATIONS.append(Surface.ROTATION_270, 180);
     }
 
+    /**
+     * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
+     * still image is ready to be saved.
+     */
+    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
+            = new ImageReader.OnImageAvailableListener() {
+
+        @Override
+        public void onImageAvailable(ImageReader reader) {
+
+            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), getFile()));
+        }
+
+    };
+
+    private  int counter = 0;
+    public File getFile() {
+        counter++;
+        return new File(mContext.getExternalFilesDir(null), counter + "_pic.jpg");
+    }
     /**
      * 
      * @param activity
@@ -230,17 +253,8 @@ public class ImageManager {
             captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
             final int rotation = this.mSindowManager.getDefaultDisplay().getRotation();
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
-            ImageReader.OnImageAvailableListener readerListener = (ImageReader readerL) -> {
-                final Image image = readerL.acquireLatestImage();
-                final ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-                final byte[] bytes = new byte[buffer.capacity()];
-                buffer.get(bytes);
-                saveImageToDisk(bytes);
-                if (image != null) {
-                    image.close();
-                }
-            };
-            reader.setOnImageAvailableListener(readerListener, mBackgroundHandler);
+
+            reader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
             mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
