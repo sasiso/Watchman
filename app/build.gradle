@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 25
+    compileSdkVersion 23
     buildToolsVersion "25.0.2"
     defaultConfig {
         applicationId "com.sss.watchman"
@@ -15,6 +15,9 @@ android {
                 cppFlags ""
             }
         }
+        jackOptions {
+            enabled true
+        }
     }
     buildTypes {
         release {
@@ -27,10 +30,14 @@ android {
             path "CMakeLists.txt"
         }
     }
+    compileOptions {
+        targetCompatibility 1.8
+        sourceCompatibility 1.8
+    }
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
