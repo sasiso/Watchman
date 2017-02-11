@@ -1,151 +1,108 @@
 package com.sss.watchman;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.util.Log;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeMap;
 
-@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-public class MainActivity extends AppCompatActivity implements OnPictureCapturedListener {
 
-    private static final int REQUEST_CAMERA_PERMISSION = 1;
 
-    private ImageManager mImageManager;
+public class MainActivity extends AppCompatActivity implements OnPictureCapturedListener, ActivityCompat.OnRequestPermissionsResultCallback {
+
+
+    public static final int MY_PERMISSIONS_REQUEST_ACCESS_CODE = 1;
+    private ImageView uploadBackPhoto;
+    private ImageView uploadFrontPhoto;
     TextView tv;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        Log.d("MainActivity", "Creating activity");
-
-        int permissionCheck = ContextCompat.checkSelfPermission(this,
-                Manifest.permission.CAMERA);
-
-        if(permissionCheck == PackageManager.PERMISSION_DENIED)
-        {
-            Log.w("MainActivity", "Application do not have permissions to start camera, Requesting...");
-            askForPermissions();
-        }
-        else {
-            Log.i("MainActivity", "Application do already have permissions to start camer");
-            startApplication();
-        }
-    }
-
-    void startApplication()
-    {
-
         setContentView(R.layout.activity_main);
-
-        // Example of a call to a native method
+        checkPermissions();
         tv = (TextView) findViewById(R.id.sample_text);
-        tv.setText(stringFromJNI());
+        tv.setText("Click start button");
         final Button btn = (Button) findViewById(R.id.start_button);
         btn.setOnClickListener(v ->
-        {
-            tv.setText("Button Clicked");
-            new ImageManager().startCapturing(this, this);
-        }
-
+                {
+                    new ImageManager().startCapturing(this, this);
+                    tv.setText("Button clicked");
+                }
         );
     }
 
-    void askForPermissions()
-    {        // Here, thisActivity is the current activity
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.CAMERA)) {
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-
-            } else {
-
-                // No explanation needed, we can request the permission.
-
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_CONTACTS},
-                        REQUEST_CAMERA_PERMISSION);
-
-                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
-            }
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case REQUEST_CAMERA_PERMISSION: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-
-                    startApplication();
-
-                } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                    Log.e("Main", "Error Permission denined for camera");
-                }
-                return;
-            }
-
-            // other 'case' lines to check for other
-            // permissions this app might request
-        }
-
-    }
-
-
-        private void StartApplication()
-    {
-
-    }
-
     /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
+     * Shows a {@link Toast} on the UI thread.
+     *
+     * @param text The message to show
      */
-    public native String stringFromJNI();
-
-    // Used to load the 'native-lib' library on application startup.
-    static {
-        System.loadLibrary("native-lib");
-    }
-
-    @Override
-    public void onCaptureDone(String pictureUrl, byte[] pictureData) {
-        tv.setText("onCaptureDone");
-        Log.v("Main", "onCaptureDone");
-
+    private void showToast(final String text) {
+        runOnUiThread(() ->
+                Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show()
+        );
     }
 
     @Override
     public void onDoneCapturingAllPhotos(TreeMap<String, byte[]> picturesTaken) {
-        tv.setText("onDoneCapturingAllPhotos");
-        Log.v("Main", "onDoneCapturingAllPhotos");
+        if (picturesTaken != null && !picturesTaken.isEmpty()) {
+            tv.setText("onDoneCapturingAllPhotos");
+        }
+    }
 
+    @Override
+    public void onCaptureDone(String pictureUrl, byte[] pictureData) {
+
+            tv.setText("onCaptureDone");
+        }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_ACCESS_CODE: {
+                if (!(grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    checkPermissions();
+                }
+            }
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    private void checkPermissions() {
+        final String[] requiredPermissions = {
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.CAMERA,
+        };
+        final List<String> neededPermissions = new ArrayList<>();
+        for (final String p : requiredPermissions) {
+            if (ContextCompat.checkSelfPermission(getApplicationContext(),
+                    p) != PackageManager.PERMISSION_GRANTED) {
+                neededPermissions.add(p);
+            }
+        }
+        if (!neededPermissions.isEmpty()) {
+            requestPermissions(neededPermissions.toArray(new String[]{}),
+                    MY_PERMISSIONS_REQUEST_ACCESS_CODE);
+        }
     }
 }
+

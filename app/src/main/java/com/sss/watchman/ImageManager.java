@@ -112,18 +112,18 @@ public class ImageManager {
     /**
      * 
      * @param activity
-     * @param mCapturedListener
+     * @param capturedListener
      */
     public void startCapturing(final Activity activity,
-                               final OnPictureCapturedListener mCapturedListener) {
+                               final OnPictureCapturedListener capturedListener) {
         Log.v(TAG, "Entered startCapturing");
 
-        this.mPicturesTaken = new TreeMap<>();
-        this.mContext = activity;
-        this.mCameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
-        this.mSindowManager = mContext.getWindowManager();
-        this.mCapturedListener = mCapturedListener;
-        this.cameraIds = new LinkedList<>();
+        mPicturesTaken = new TreeMap<>();
+        mContext = activity;
+        mCameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
+        mSindowManager = mContext.getWindowManager();
+        mCapturedListener = capturedListener;
+        cameraIds = new LinkedList<>();
         try {
             final String[] cameraIdList = mCameraManager.getCameraIdList();
             if (cameraIdList != null && cameraIdList.length != 0) {
@@ -145,12 +145,14 @@ public class ImageManager {
         Log.d(TAG, "opening camera " + mCurrentCameraId);
         try {
             if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA)
-                    == PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(mContext,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
                 mCameraManager.openCamera(mCurrentCameraId, stateCallback, null);
             }
+            else {
+                Log.e(TAG, "Permission not granted");
+
+            }
+
         } catch (CameraAccessException e) {
             Log.e(TAG, " exception opening camera " + mCurrentCameraId + e.getMessage());
         }
