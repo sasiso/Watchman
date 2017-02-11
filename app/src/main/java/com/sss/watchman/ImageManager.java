@@ -41,26 +41,65 @@ import java.util.Queue;
 import java.util.TreeMap;
 
 /**
- * The aim of this service is to secretly take pictures (without preview or opening device's camera app)
- * from all available cameras.
- * @author hzitoun (zitoun.hamed@gmail.com)
+ * This class implements image capture service
+ *
  */
 
+//todo fix this
 @TargetApi(Build.VERSION_CODES.LOLLIPOP) //camera 2 api was added in API level 21
 public class ImageManager {
 
-    private static final String TAG = "PictureService";
-    private CameraDevice cameraDevice;
-    private ImageReader imageReader;
+    /**
+     * {@link Log} Tag for logging
+     */
+    private static final String TAG = "ImageManager";
+    /**
+     * {@link CameraDevice} Represents a camera device
+     */
+    private CameraDevice mCameraDevice;
+    /**
+     *  {@link ImageReader} represents image reader
+     */
+    private ImageReader mImageReader;
+    /**
+     *
+     */
     private Handler mBackgroundHandler;
+    /**
+     *
+     */
     private HandlerThread mBackgroundThread;
-    private Activity context;
-    private WindowManager windowManager;
-    private CameraManager manager;
-    private TreeMap<String, byte[]> picturesTaken;
-    private OnPictureCapturedListener capturedListener;
+    /**
+     *
+     */
+    private Activity mContext;
+    /**
+     *
+     */
+    private WindowManager mSindowManager;
+    /**
+     *
+     */
+    private CameraManager mCameraManager;
+    /**
+     *
+     */
+    private TreeMap<String, byte[]> mPicturesTaken;
+    /**
+     *
+     */
+    private OnPictureCapturedListener mCapturedListener;
+    /**
+     *
+     */
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-    private String currentCameraId;
+    /**
+     *
+     */
+    private String mCurrentCameraId;
+    /**
+     *
+     */
     private Queue<String> cameraIds;
 
     static {
@@ -70,24 +109,31 @@ public class ImageManager {
         ORIENTATIONS.append(Surface.ROTATION_270, 180);
     }
 
+    /**
+     * 
+     * @param activity
+     * @param mCapturedListener
+     */
     public void startCapturing(final Activity activity,
-                               final OnPictureCapturedListener capturedListener) {
-        this.picturesTaken = new TreeMap<>();
-        this.context = activity;
-        this.manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
-        this.windowManager = context.getWindowManager();
-        this.capturedListener = capturedListener;
+                               final OnPictureCapturedListener mCapturedListener) {
+        Log.v(TAG, "Entered startCapturing");
+
+        this.mPicturesTaken = new TreeMap<>();
+        this.mContext = activity;
+        this.mCameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
+        this.mSindowManager = mContext.getWindowManager();
+        this.mCapturedListener = mCapturedListener;
         this.cameraIds = new LinkedList<>();
         try {
-            final String[] cameraIdList = manager.getCameraIdList();
+            final String[] cameraIdList = mCameraManager.getCameraIdList();
             if (cameraIdList != null && cameraIdList.length != 0) {
                 for (final String cameraId : cameraIdList) {
                     this.cameraIds.add(cameraId);
                 }
-                this.currentCameraId = this.cameraIds.poll();
+                this.mCurrentCameraId = this.cameraIds.poll();
                 openCameraAndTakePicture();
             } else {
-                capturedListener.onDoneCapturingAllPhotos(picturesTaken);
+                mCapturedListener.onDoneCapturingAllPhotos(mPicturesTaken);
             }
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -96,17 +142,17 @@ public class ImageManager {
 
     private void openCameraAndTakePicture() {
         startBackgroundThread();
-        Log.d(TAG, "opening camera " + currentCameraId);
+        Log.d(TAG, "opening camera " + mCurrentCameraId);
         try {
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+            if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA)
                     == PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(context,
+                    && ActivityCompat.checkSelfPermission(mContext,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
-                manager.openCamera(currentCameraId, stateCallback, null);
+                mCameraManager.openCamera(mCurrentCameraId, stateCallback, null);
             }
         } catch (CameraAccessException e) {
-            Log.e(TAG, " exception opening camera " + currentCameraId + e.getMessage());
+            Log.e(TAG, " exception opening camera " + mCurrentCameraId + e.getMessage());
         }
     }
 
@@ -115,7 +161,7 @@ public class ImageManager {
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
             Log.d(TAG, "camera " + camera.getId() + " opened");
-            cameraDevice = camera;
+            mCameraDevice = camera;
             Log.i(TAG, "Taking picture from camera " + camera.getId());
             takePicture();
         }
@@ -123,8 +169,8 @@ public class ImageManager {
         @Override
         public void onDisconnected(@NonNull CameraDevice camera) {
             Log.d(TAG, " camera " + camera.getId() + " disconnected");
-            if (cameraDevice != null) {
-                cameraDevice.close();
+            if (mCameraDevice != null) {
+                mCameraDevice.close();
             }
         }
 
@@ -137,7 +183,7 @@ public class ImageManager {
                                 takeAnotherPicture()
                         , 100);
             } else {
-                capturedListener.onDoneCapturingAllPhotos(picturesTaken);
+                mCapturedListener.onDoneCapturingAllPhotos(mPicturesTaken);
             }
         }
 
@@ -145,22 +191,22 @@ public class ImageManager {
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
             Log.e(TAG, "camera in error, int code " + error);
-            if (cameraDevice != null) {
-                cameraDevice.close();
+            if (mCameraDevice != null) {
+                mCameraDevice.close();
             } else {
-                cameraDevice = null;
+                mCameraDevice = null;
             }
         }
     };
 
 
     private void takePicture() {
-        if (null == cameraDevice) {
-            Log.e(TAG, "cameraDevice is null");
+        if (null == mCameraDevice) {
+            Log.e(TAG, "mCameraDevice is null");
             return;
         }
         try {
-            final CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
+            final CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(mCameraDevice.getId());
             Size[] jpegSizes = null;
             if (characteristics != null) {
                 if (characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) != null) {
@@ -177,10 +223,10 @@ public class ImageManager {
             final ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
             final List<Surface> outputSurfaces = new ArrayList<>(2);
             outputSurfaces.add(reader.getSurface());
-            final CaptureRequest.Builder captureBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(reader.getSurface());
             captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-            final int rotation = this.windowManager.getDefaultDisplay().getRotation();
+            final int rotation = this.mSindowManager.getDefaultDisplay().getRotation();
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
             ImageReader.OnImageAvailableListener readerListener = (ImageReader readerL) -> {
                 final Image image = readerL.acquireLatestImage();
@@ -193,7 +239,7 @@ public class ImageManager {
                 }
             };
             reader.setOnImageAvailableListener(readerListener, mBackgroundHandler);
-            cameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
+            mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     try {
@@ -213,12 +259,12 @@ public class ImageManager {
     }
 
     private void saveImageToDisk(final byte[] bytes) {
-        final File file = new File(Environment.getExternalStorageDirectory() + "/" + this.cameraDevice.getId() + "_pic.jpg");
+        final File file = new File(Environment.getExternalStorageDirectory() + "/" + this.mCameraDevice.getId() + "_pic.jpg");
         OutputStream output = null;
         try {
             output = new FileOutputStream(file);
             output.write(bytes);
-            this.picturesTaken.put(file.getPath(), bytes);
+            this.mPicturesTaken.put(file.getPath(), bytes);
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -235,7 +281,7 @@ public class ImageManager {
 
     private void startBackgroundThread() {
         if (mBackgroundThread == null) {
-            mBackgroundThread = new HandlerThread("Camera Background" + currentCameraId);
+            mBackgroundThread = new HandlerThread("Camera Background" + mCurrentCameraId);
             mBackgroundThread.start();
             mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
         }
@@ -255,19 +301,19 @@ public class ImageManager {
 
     private void takeAnotherPicture() {
         startBackgroundThread();
-        this.currentCameraId = this.cameraIds.poll();
+        this.mCurrentCameraId = this.cameraIds.poll();
         openCameraAndTakePicture();
     }
 
     private void closeCamera() {
-        Log.d(TAG, "closing camera " + cameraDevice.getId());
-        if (null != cameraDevice) {
-            cameraDevice.close();
-            cameraDevice = null;
+        Log.d(TAG, "closing camera " + mCameraDevice.getId());
+        if (null != mCameraDevice) {
+            mCameraDevice.close();
+            mCameraDevice = null;
         }
-        if (null != imageReader) {
-            imageReader.close();
-            imageReader = null;
+        if (null != mImageReader) {
+            mImageReader.close();
+            mImageReader = null;
         }
     }
 
@@ -277,9 +323,9 @@ public class ImageManager {
         public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request,
                                        @NonNull TotalCaptureResult result) {
             super.onCaptureCompleted(session, request, result);
-            if (picturesTaken.lastEntry() != null) {
-                capturedListener.onCaptureDone(picturesTaken.lastEntry().getKey(), picturesTaken.lastEntry().getValue());
-                Log.i(TAG, "done taking picture from camera " + cameraDevice.getId());
+            if (mPicturesTaken.lastEntry() != null) {
+                mCapturedListener.onCaptureDone(mPicturesTaken.lastEntry().getKey(), mPicturesTaken.lastEntry().getValue());
+                Log.i(TAG, "done taking picture from camera " + mCameraDevice.getId());
             }
             closeCamera();
         }

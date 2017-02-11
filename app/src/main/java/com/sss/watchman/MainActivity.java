@@ -20,6 +20,7 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
     private static final int REQUEST_CAMERA_PERMISSION = 1;
 
     private ImageManager mImageManager;
+    TextView tv;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,11 +48,15 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
         setContentView(R.layout.activity_main);
 
         // Example of a call to a native method
-        TextView tv = (TextView) findViewById(R.id.sample_text);
+        tv = (TextView) findViewById(R.id.sample_text);
         tv.setText(stringFromJNI());
         final Button btn = (Button) findViewById(R.id.start_button);
         btn.setOnClickListener(v ->
-                new ImageManager().startCapturing(this, this)
+        {
+            tv.setText("Button Clicked");
+            new ImageManager().startCapturing(this, this);
+        }
+
         );
     }
 
@@ -132,12 +137,14 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
 
     @Override
     public void onCaptureDone(String pictureUrl, byte[] pictureData) {
+        tv.setText("onCaptureDone");
         Log.v("Main", "onCaptureDone");
 
     }
 
     @Override
     public void onDoneCapturingAllPhotos(TreeMap<String, byte[]> picturesTaken) {
+        tv.setText("onDoneCapturingAllPhotos");
         Log.v("Main", "onDoneCapturingAllPhotos");
 
     }
