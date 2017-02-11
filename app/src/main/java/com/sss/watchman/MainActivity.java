@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
-    private BaseImageManager mImageManager;
+    private ImageManager mImageManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         mImageManager = new ImageManager();
