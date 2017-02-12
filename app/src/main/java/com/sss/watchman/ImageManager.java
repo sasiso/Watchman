@@ -17,8 +17,6 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
-import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
@@ -29,19 +27,12 @@ import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.WindowManager;
 
-
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.TreeMap;
-
-import utils.ImageSaver;
 
 /**
  * This class implements image capture service
@@ -87,10 +78,6 @@ public class ImageManager {
     /**
      *
      */
-    private TreeMap<String, byte[]> mPicturesTaken;
-    /**
-     *
-     */
     private OnPictureCapturedListener mCapturedListener;
     /**
      *
@@ -122,8 +109,8 @@ public class ImageManager {
         @Override
         public void onImageAvailable(ImageReader reader) {
 
-            sendImage(reader);
-            //mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), getFile()));
+
+            mBackgroundHandler.post(()->sendImage(reader));
         }
 
     };
@@ -140,22 +127,14 @@ public class ImageManager {
             image.close();
         }
     }
-
-    private  int counter = 0;
-    public File getFile() {
-        counter++;
-        return new File(mContext.getExternalFilesDir(null), counter + "_pic.jpg");
-    }
     /**
-     * 
+     *
      * @param activity
      * @param capturedListener
      */
     public void startCapturing(final Activity activity,
                                final OnPictureCapturedListener capturedListener) {
         Log.v(TAG, "Entered startCapturing");
-
-        mPicturesTaken = new TreeMap<>();
         mContext = activity;
         mCameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
         mSindowManager = mContext.getWindowManager();
@@ -164,13 +143,20 @@ public class ImageManager {
         try {
             final String[] cameraIdList = mCameraManager.getCameraIdList();
             if (cameraIdList != null && cameraIdList.length != 0) {
+
                 for (final String cameraId : cameraIdList) {
+                    CameraCharacteristics characteristics
+                            = mCameraManager.getCameraCharacteristics(cameraId);
+
+                    // We don't use a front facing camera in this sample.
+                    Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                    if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                        continue;
+                    }
                     this.cameraIds.add(cameraId);
                 }
                 this.mCurrentCameraId = this.cameraIds.poll();
                 openCameraAndTakePicture();
-            } else {
-                mCapturedListener.onDoneCapturingAllPhotos(mPicturesTaken);
             }
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -221,9 +207,8 @@ public class ImageManager {
                 new Handler().postDelayed(() ->
                                 takeAnotherPicture()
                         , 100);
-            } else {
-                mCapturedListener.onDoneCapturingAllPhotos(mPicturesTaken);
             }
+
         }
 
 
@@ -333,10 +318,6 @@ public class ImageManager {
         public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request,
                                        @NonNull TotalCaptureResult result) {
             super.onCaptureCompleted(session, request, result);
-            if (mPicturesTaken.lastEntry() != null) {
-                mCapturedListener.onCaptureDone(mPicturesTaken.lastEntry().getKey(), mPicturesTaken.lastEntry().getValue());
-                Log.i(TAG, "done taking picture from camera " + mCameraDevice.getId());
-            }
             closeCamera();
         }
     };
