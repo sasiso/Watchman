@@ -24,19 +24,21 @@ import java.util.List;
 import java.util.TreeMap;
 
 import Interfaces.BaseFactory;
+import Interfaces.BaseImage;
+import Interfaces.ImageChangedCallback;
 import factory.Factory;
 
 
 /**
  * Entry point Application
  */
-public class MainActivity extends AppCompatActivity implements OnPictureCapturedListener, ActivityCompat.OnRequestPermissionsResultCallback {
+public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback{
     final BaseFactory factory = new Factory();
 
     final static String TAG = "Watchman";
     private ImageView mImageView;
 
-    public static final int MY_PERMISSIONS_REQUEST_ACCESS_CODE = 1;
+    public static final int PERMISSIONS_REQUEST_ACCESS_CODE = 1;
     /**
      * todo remove this
      */
@@ -73,11 +75,17 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
         }
     }
 
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
+        mImageManager.stop();
+    }
+
     void init()
     {
 
         setContentView(R.layout.activity_main);
-        mImageManager = new ImageManager();
+        mImageManager = new ImageManager(this);
 
         // Example of a call to a native method
         tv = (TextView) findViewById(R.id.sample_text);
@@ -87,7 +95,11 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
         btn.setOnClickListener(v ->
                 {
                     tv.setText("Button Clicked");
-                    mImageManager.startCapturing(this, this);
+                    try {
+                        mImageManager.start(1);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
 
         );
@@ -103,33 +115,11 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
 
         return true;
     }
-
-
-    @Override
-    public void onDoneCapturingAllPhotos(TreeMap<String, byte[]> picturesTaken) {
-        if (picturesTaken != null && !picturesTaken.isEmpty()) {
-            tv.setText("onDoneCapturingAllPhotos");
-        }
-    }
-
-    @Override
-    public void onCaptureDone(String pictureUrl, byte[] pictureData) {
-
-        if (pictureData != null && pictureUrl != null) {
-            runOnUiThread(() -> {
-                final Bitmap bitmap = BitmapFactory.decodeByteArray(pictureData, 0, pictureData.length);
-                final int nh = (int) (bitmap.getHeight() * (512.0 / bitmap.getWidth()));
-                final Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 512, nh, true);
-                mImageView.setImageBitmap(scaled);
-            });
-        }
-        }
-
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String permissions[], @NonNull int[] grantResults) {
         switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_ACCESS_CODE: {
+            case PERMISSIONS_REQUEST_ACCESS_CODE: {
                 if (!(grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                      init();
@@ -159,8 +149,20 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
         }
         if (!neededPermissions.isEmpty()) {
             requestPermissions(neededPermissions.toArray(new String[]{}),
-                    MY_PERMISSIONS_REQUEST_ACCESS_CODE);
+                    PERMISSIONS_REQUEST_ACCESS_CODE);
         }
     }
+
+    public void onImageChanged(BaseImage image) {
+        runOnUiThread(() -> {
+            byte[] pictureData = image.getPixels();
+            final Bitmap bitmap = BitmapFactory.decodeByteArray(pictureData, 0, pictureData.length);
+            final int nh = (int) (bitmap.getHeight() * (512.0 / bitmap.getWidth()));
+            final Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 512, nh, true);
+            mImageView.setImageBitmap(scaled);
+        });
+
+    }
+
 }
 

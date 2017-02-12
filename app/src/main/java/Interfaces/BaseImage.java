@@ -12,6 +12,6 @@ public interface BaseImage <T>{
     abstract int getWidth();
     abstract List<T> getRow(final int index);
     abstract List<T> getColumn(final int index);
-    abstract Vector<T> getPixels();
-    abstract void setPixel(final Vector<T> pixels);
+    abstract byte[] getPixels();
+    abstract boolean isSame(BaseImage another);
 }

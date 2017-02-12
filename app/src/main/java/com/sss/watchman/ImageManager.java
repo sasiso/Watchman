@@ -1,38 +1,18 @@
 package com.sss.watchman;
 
-import android.Manifest;
 import android.annotation.TargetApi;
-import android.app.Activity;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.graphics.ImageFormat;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
-import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.TotalCaptureResult;
-import android.media.Image;
-import android.media.ImageReader;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.util.Log;
-import android.util.Size;
-import android.util.SparseIntArray;
-import android.view.Surface;
-import android.view.WindowManager;
+import android.os.Looper;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import Interfaces.BaseImage;
+import Interfaces.BaseImageSource;
+import Interfaces.ImageChangedCallback;
 
 /**
  * This class implements image capture service
@@ -41,284 +21,79 @@ import java.util.Queue;
 
 //todo fix this
 @TargetApi(Build.VERSION_CODES.LOLLIPOP) //camera 2 api was added in API level 21
-public class ImageManager {
+public class ImageManager implements BaseImageSource, ImageChangedCallback{
 
-    /**
-     * {@link Log} Tag for logging
-     */
-    private static final String TAG = "ImageManager";
-    /**
-     * {@link CameraDevice} Represents a camera device
-     */
-    private CameraDevice mCameraDevice;
-    /**
-     *  {@link ImageReader} represents image reader
-     */
-    private ImageReader mImageReader;
-    /**
-     *
-     */
-    private Handler mBackgroundHandler;
-    /**
-     *
-     */
-    private HandlerThread mBackgroundThread;
-    /**
-     *
-     */
-    private Activity mContext;
-    /**
-     *
-     */
-    private WindowManager mSindowManager;
-    /**
-     *
-     */
-    private CameraManager mCameraManager;
-    /**
-     *
-     */
-    private OnPictureCapturedListener mCapturedListener;
-    /**
-     *
-     */
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-    /**
-     *
-     */
-    private String mCurrentCameraId;
-    /**
-     *
-     */
-    private Queue<String> cameraIds;
+    MainActivity mActivity = null;
+    final Lock lock = new ReentrantLock();
+    final Condition mcaptureCondition  = lock.newCondition();
 
-    static {
-        ORIENTATIONS.append(Surface.ROTATION_0, 90);
-        ORIENTATIONS.append(Surface.ROTATION_90, 0);
-        ORIENTATIONS.append(Surface.ROTATION_180, 270);
-        ORIENTATIONS.append(Surface.ROTATION_270, 180);
-    }
+    AndroidCamera mAndroidCamera = null;
+    BaseImage mCurrentImage = null;
+    boolean mStopped = false;
+    private HandlerThread mCameraThread;
 
-    /**
-     * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
-     * still image is ready to be saved.
-     */
-    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
-            = new ImageReader.OnImageAvailableListener() {
-
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-
-
-            mBackgroundHandler.post(()->sendImage(reader));
-        }
-
-    };
-
-    private  void sendImage(ImageReader reader)
+    ImageManager(MainActivity activity)
     {
-        final Image image = reader.acquireLatestImage();
-        final ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-        final byte[] bytes = new byte[buffer.capacity()];
-        buffer.get(bytes);
-        mCapturedListener.onCaptureDone("abc", bytes);
-
-        if (image != null) {
-            image.close();
-        }
-    }
-    /**
-     *
-     * @param activity
-     * @param capturedListener
-     */
-    public void startCapturing(final Activity activity,
-                               final OnPictureCapturedListener capturedListener) {
-        Log.v(TAG, "Entered startCapturing");
-        mContext = activity;
-        mCameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
-        mSindowManager = mContext.getWindowManager();
-        mCapturedListener = capturedListener;
-        cameraIds = new LinkedList<>();
-        try {
-            final String[] cameraIdList = mCameraManager.getCameraIdList();
-            if (cameraIdList != null && cameraIdList.length != 0) {
-
-                for (final String cameraId : cameraIdList) {
-                    CameraCharacteristics characteristics
-                            = mCameraManager.getCameraCharacteristics(cameraId);
-
-                    // We don't use a front facing camera in this sample.
-                    Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                    if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
-                        continue;
-                    }
-                    this.cameraIds.add(cameraId);
-                }
-                this.mCurrentCameraId = this.cameraIds.poll();
-                openCameraAndTakePicture();
-            }
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void openCameraAndTakePicture() {
-        startBackgroundThread();
-        Log.d(TAG, "opening camera " + mCurrentCameraId);
-        try {
-            if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA)
-                    == PackageManager.PERMISSION_GRANTED) {
-                mCameraManager.openCamera(mCurrentCameraId, stateCallback, null);
-            }
-            else {
-                Log.e(TAG, "Permission not granted");
-
-            }
-
-        } catch (CameraAccessException e) {
-            Log.e(TAG, " exception opening camera " + mCurrentCameraId + e.getMessage());
-        }
+        mActivity = activity;
     }
 
 
-    private final CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
-        @Override
-        public void onOpened(@NonNull CameraDevice camera) {
-            Log.d(TAG, "camera " + camera.getId() + " opened");
-            mCameraDevice = camera;
-            Log.i(TAG, "Taking picture from camera " + camera.getId());
-            takePicture();
-        }
+    @Override
+    public BaseImage getLastImage() {
+        return null;
+    }
 
-        @Override
-        public void onDisconnected(@NonNull CameraDevice camera) {
-            Log.d(TAG, " camera " + camera.getId() + " disconnected");
-            if (mCameraDevice != null) {
-                mCameraDevice.close();
-            }
-        }
+    private void submitJob()
+    {
+        Handler h = new Handler(mCameraThread.getLooper());
+        h.post(()-> startCamera());
+    }
 
-        @Override
-        public void onClosed(@NonNull CameraDevice camera) {
-            Log.d(TAG, "camera " + camera.getId() + " closed");
-            stopBackgroundThread();
-            if (!cameraIds.isEmpty()) {
-                new Handler().postDelayed(() ->
-                                takeAnotherPicture()
-                        , 100);
-            }
+    @Override
+    public void start(int everySecond) throws InterruptedException {
+        startCameraThread();
+        submitJob();
 
-        }
+    }
 
-
-        @Override
-        public void onError(@NonNull CameraDevice camera, int error) {
-            Log.e(TAG, "camera in error, int code " + error);
-            if (mCameraDevice != null) {
-                mCameraDevice.close();
-            } else {
-                mCameraDevice = null;
-            }
-        }
-    };
-
-
-    private void takePicture() {
-        if (null == mCameraDevice) {
-            Log.e(TAG, "mCameraDevice is null");
-            return;
-        }
-        try {
-            final CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(mCameraDevice.getId());
-            Size[] jpegSizes = null;
-            if (characteristics != null) {
-                if (characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) != null) {
-                    jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-                            .getOutputSizes(ImageFormat.JPEG);
-                }
-            }
-            int width = 640;
-            int height = 480;
-            if (jpegSizes != null && 0 < jpegSizes.length) {
-                width = jpegSizes[0].getWidth();
-                height = jpegSizes[0].getHeight();
-            }
-            final ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
-            final List<Surface> outputSurfaces = new ArrayList<>(2);
-            outputSurfaces.add(reader.getSurface());
-            final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-            captureBuilder.addTarget(reader.getSurface());
-            captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-            final int rotation = this.mSindowManager.getDefaultDisplay().getRotation();
-            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
-
-            reader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
-            mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
-                @Override
-                public void onConfigured(@NonNull CameraCaptureSession session) {
-                    try {
-                        session.capture(captureBuilder.build(), captureListener, mBackgroundHandler);
-                    } catch (CameraAccessException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                @Override
-                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                }
-            }, mBackgroundHandler);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
+    public void startCamera(){
+        Handler handler = new Handler(mCameraThread.getLooper());
+        handler.post(()->{
+            mAndroidCamera = new AndroidCamera(mActivity,this);
+            mAndroidCamera.startCapturing();
+        });
     }
 
 
-    private void startBackgroundThread() {
-        if (mBackgroundThread == null) {
-            mBackgroundThread = new HandlerThread("Camera Background" + mCurrentCameraId);
-            mBackgroundThread.start();
-            mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
-        }
+    @Override
+    public void stop() {
+        stopCameraThread();
+        mStopped = true;
     }
 
-    private void stopBackgroundThread() {
-        mBackgroundThread.quitSafely();
-        try {
-            mBackgroundThread.join();
-            mBackgroundThread = null;
-            mBackgroundHandler = null;
-        } catch (InterruptedException e) {
-            Log.e(TAG, "exception stopBackgroundThread" + e.getMessage());
-        }
+    private void startCameraThread(){
+        mCameraThread = new HandlerThread("Camera Background thread");
+        mCameraThread.start();
     }
 
-
-    private void takeAnotherPicture() {
-        startBackgroundThread();
-        this.mCurrentCameraId = this.cameraIds.poll();
-        openCameraAndTakePicture();
+    private  void stopCameraThread() {
     }
 
-    private void closeCamera() {
-        Log.d(TAG, "closing camera " + mCameraDevice.getId());
-        if (null != mCameraDevice) {
-            mCameraDevice.close();
-            mCameraDevice = null;
-        }
-        if (null != mImageReader) {
-            mImageReader.close();
-            mImageReader = null;
-        }
+    @Override
+    public void onImageChanged(BaseImage image) {
+        mActivity.onImageChanged(image);
+        mCurrentImage = image;
+        releaseCamera();
     }
 
+    @Override
+    public void onFailure() {
+        releaseCamera();
+    }
 
-    final private CameraCaptureSession.CaptureCallback captureListener = new CameraCaptureSession.CaptureCallback() {
-        @Override
-        public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request,
-                                       @NonNull TotalCaptureResult result) {
-            super.onCaptureCompleted(session, request, result);
-            closeCamera();
-        }
-    };
+    private void releaseCamera()
+    {
+        Handler handler = new Handler(mCameraThread.getLooper());
+        handler.post(()-> mAndroidCamera.close());
+    }
 }

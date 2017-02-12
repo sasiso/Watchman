@@ -5,4 +5,8 @@ package Interfaces;
  */
 
 public interface BaseAlarmManager {
+    enum  FailureType{ Breach, InternalError}
+    public void raiseAlarm(final FailureType type, final int threshold);
 }
+
+
