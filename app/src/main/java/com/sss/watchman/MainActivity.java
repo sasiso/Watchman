@@ -90,6 +90,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         // Example of a call to a native method
         tv = (TextView) findViewById(R.id.sample_text);
         mImageView = (ImageView) findViewById(R.id.imageView);
+        mImageView.setOnClickListener(v->{});
         tv.setText("Click Start Button");
         final Button btn = (Button) findViewById(R.id.start_button);
         btn.setOnClickListener(v ->

@@ -42,6 +42,11 @@ import datatypes.Image8bit;
 @TargetApi(Build.VERSION_CODES.LOLLIPOP) //camera 2 api was added in API level 21
 public class AndroidCamera {
 
+    AndroidCamera(Handler handler)
+    {
+        mBackgroundHandler = handler;
+    }
+
 
     /**
      * {@link Log} Tag for logging
@@ -113,12 +118,6 @@ public class AndroidCamera {
 
     };
 
-    public AndroidCamera(final Activity activity,
-                         final ImageChangedCallback capturedListener)
-    {
-        mContext = activity;
-        mCapturedListener = capturedListener;
-    }
     private  void sendImage(ImageReader reader)
     {
         final Image image = reader.acquireLatestImage();
@@ -134,8 +133,12 @@ public class AndroidCamera {
     /**
      *
      */
-    public void startCapturing() {
+    public void startCapturing(final Activity activity,
+                               final ImageChangedCallback capturedListener) {
         Log.v(TAG, "Entered startCapturing");
+
+        mContext = activity;
+        mCapturedListener = capturedListener;
 
         mCameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
         mSindowManager = mContext.getWindowManager();
@@ -165,7 +168,6 @@ public class AndroidCamera {
     }
 
     private void openCameraAndTakePicture() {
-        startBackgroundThread();
         Log.d(TAG, "opening camera " + mCurrentCameraId);
         try {
                 mCameraManager.openCamera(mCurrentCameraId, stateCallback, null);
@@ -247,15 +249,6 @@ public class AndroidCamera {
             }, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
-        }
-    }
-
-
-    private void startBackgroundThread() {
-        if (mBackgroundThread == null) {
-            mBackgroundThread = new HandlerThread("Camera Background" + mCurrentCameraId);
-            mBackgroundThread.start();
-            mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
         }
     }
 

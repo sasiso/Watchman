@@ -38,5 +38,6 @@
         android:layout_marginTop="35dp"
         android:id="@+id/imageView"
         android:layout_above="@+id/start_button"
-        android:layout_alignParentEnd="true" />
+        android:layout_alignParentEnd="true"
+        android:clickable="false" />
 </RelativeLayout>
