@@ -3,6 +3,8 @@ package com.sss.watchman;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -11,6 +13,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,6 +34,7 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
     final BaseFactory factory = new Factory();
 
     final static String TAG = "Watchman";
+    private ImageView mImageView;
 
     public static final int MY_PERMISSIONS_REQUEST_ACCESS_CODE = 1;
     /**
@@ -61,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
 
         if(allPermissionOk())
         {
-            startApplication();
+             init();
         }
         else
         {
@@ -69,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
         }
     }
 
-    void startApplication()
+    void init()
     {
 
         setContentView(R.layout.activity_main);
@@ -77,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
 
         // Example of a call to a native method
         tv = (TextView) findViewById(R.id.sample_text);
+        mImageView = (ImageView) findViewById(R.id.imageView);
         tv.setText("Click Start Button");
         final Button btn = (Button) findViewById(R.id.start_button);
         btn.setOnClickListener(v ->
@@ -110,7 +115,14 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
     @Override
     public void onCaptureDone(String pictureUrl, byte[] pictureData) {
 
-            tv.setText("onCaptureDone");
+        if (pictureData != null && pictureUrl != null) {
+            runOnUiThread(() -> {
+                final Bitmap bitmap = BitmapFactory.decodeByteArray(pictureData, 0, pictureData.length);
+                final int nh = (int) (bitmap.getHeight() * (512.0 / bitmap.getWidth()));
+                final Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 512, nh, true);
+                mImageView.setImageBitmap(scaled);
+            });
+        }
         }
 
     @Override
@@ -120,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements OnPictureCaptured
             case MY_PERMISSIONS_REQUEST_ACCESS_CODE: {
                 if (!(grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                    startApplication();
+                     init();
                 }
                 else {
                     //

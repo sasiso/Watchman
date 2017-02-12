@@ -122,10 +122,24 @@ public class ImageManager {
         @Override
         public void onImageAvailable(ImageReader reader) {
 
-            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), getFile()));
+            sendImage(reader);
+            //mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), getFile()));
         }
 
     };
+
+    private  void sendImage(ImageReader reader)
+    {
+        final Image image = reader.acquireLatestImage();
+        final ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+        final byte[] bytes = new byte[buffer.capacity()];
+        buffer.get(bytes);
+        mCapturedListener.onCaptureDone("abc", bytes);
+
+        if (image != null) {
+            image.close();
+        }
+    }
 
     private  int counter = 0;
     public File getFile() {
@@ -271,26 +285,6 @@ public class ImageManager {
             }, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
-        }
-    }
-
-    private void saveImageToDisk(final byte[] bytes) {
-        final File file = new File(Environment.getExternalStorageDirectory() + "/" + this.mCameraDevice.getId() + "_pic.jpg");
-        OutputStream output = null;
-        try {
-            output = new FileOutputStream(file);
-            output.write(bytes);
-            this.mPicturesTaken.put(file.getPath(), bytes);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (null != output) {
-                try {
-                    output.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
