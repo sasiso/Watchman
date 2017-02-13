@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import Interfaces.BaseImage;
 import Interfaces.ImageChangedCallback;
 import datatypes.Image8bit;
 
@@ -113,22 +114,20 @@ public class AndroidCamera {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            mBackgroundHandler.post(()->sendImage(reader));
+            final Image image = reader.acquireLatestImage();
+            final ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+            final byte[] bytes = new byte[buffer.capacity()];
+            buffer.get(bytes);
+            BaseImage img = new Image8bit(0,0, bytes);
+            image.close();
+            mBackgroundHandler.post(()->sendImage(img));
         }
 
     };
 
-    private  void sendImage(ImageReader reader)
+    private  void sendImage(BaseImage baseImage)
     {
-        final Image image = reader.acquireLatestImage();
-        final ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-        final byte[] bytes = new byte[buffer.capacity()];
-        buffer.get(bytes);
-        mCapturedListener.onImageChanged(new Image8bit(0,0, bytes));
-
-        if (image != null) {
-            image.close();
-        }
+        mCapturedListener.onImageChanged(baseImage);
     }
     /**
      *
@@ -221,16 +220,16 @@ public class AndroidCamera {
                 height = jpegSizes[0].getHeight();
             }
 
-            final ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
+            mImageReader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
             final List<Surface> outputSurfaces = new ArrayList<>(2);
-            outputSurfaces.add(reader.getSurface());
+            outputSurfaces.add(mImageReader.getSurface());
             final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-            captureBuilder.addTarget(reader.getSurface());
+            captureBuilder.addTarget(mImageReader.getSurface());
             captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
             final int rotation = this.mSindowManager.getDefaultDisplay().getRotation();
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
 
-            reader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
+            mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
             mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
