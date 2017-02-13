@@ -1,23 +1,23 @@
 package com.sss.watchman;
 
+import android.app.Activity;
+
 import Interfaces.BaseAlarmManager;
-import Interfaces.BaseFactory;
 import Interfaces.BaseImage;
 import Interfaces.BaseImageCompare;
 import Interfaces.BaseImageSource;
+import Interfaces.ImageChangedCallback;
+import factory.Factory;
 
 /**
  * Created by satbir on 12/02/17.
  */
 
-public class Watchman {
-
-    private boolean mStopped = false;
-
+public class Watchman implements ImageChangedCallback{
     /**
      *  Will decide image capture frequency
      */
-    int mImageIntervalSec = 1;
+     private int mImageIntervalSec;
 
     /**
      * On what difference alarm will be raised
@@ -26,48 +26,51 @@ public class Watchman {
 
     private BaseImageSource mImageSource = null;
     private BaseImageCompare mBaseImageCompare =null;
-    private BaseImage currImage = null;
     private BaseImage lastImage = null;
     private BaseAlarmManager mAlarmManager= null;
+    private ImageChangedCallback mImageChangedCallback = null;
 
-    /**
-     *
-     * @param factory
-     * @param imageInterval
-     */
 
-    public Watchman(BaseFactory factory, int imageInterval, int alarmThresholdPercentage)
+    public Watchman(Activity activity, ImageChangedCallback cb)
     {
-        mImageSource = factory.getImageSource();
-        mBaseImageCompare = factory.getImageCompare();
-        mAlarmManager = factory.getAlertManager();
-        mAlarmThresholdPercentage = alarmThresholdPercentage;
+        mImageChangedCallback = cb;
+        Factory f = new Factory(activity, this);
+        mImageSource = f.getImageSource();
+        mBaseImageCompare = f.getImageCompare();
+        mAlarmManager = f.getAlertManager();
+        mAlarmThresholdPercentage = 10;
+        mImageIntervalSec = 1;
     }
 
-    public void start()
-    {
-        mStopped = false;
-        lastImage = mImageSource.getLastImage();
-        while(!mStopped)
-        {
-            currImage = mImageSource.getLastImage();
-            if(currImage.isSame(lastImage))
-                continue;
-            // todo this should be event driven rather a while loop
-            int diff = mBaseImageCompare.getDifference(lastImage,currImage);
-            if( diff > mAlarmThresholdPercentage)
+    void start() throws InterruptedException {
+        mImageSource.start(mImageIntervalSec);
+    }
+
+    @Override
+    public void onImageChanged(BaseImage image) {
+           if(lastImage ==null){
+               lastImage = image;
+               return;
+           }
+        int diff = mBaseImageCompare.getDifference(lastImage, image);
+        if( diff > mAlarmThresholdPercentage)
                 mAlarmManager.raiseAlarm(BaseAlarmManager.FailureType.Breach, diff);
 
-            lastImage = currImage;
-        }
+        lastImage = image;
+        try {
+            mImageChangedCallback.onImageChanged(image);
+        }catch (Exception e) { e.printStackTrace();}
 
     }
 
-    public  void stop()
-    {
-      mStopped = true;
+    @Override
+    public void onFailure() {
+        mImageChangedCallback.onFailure();
+        mImageSource.stop();
+
     }
 
-
-
+    void stop(){
+        mImageSource.stop();
+    }
 }

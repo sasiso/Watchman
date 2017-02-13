@@ -1,6 +1,7 @@
 package com.sss.watchman;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -16,16 +17,18 @@ import Interfaces.ImageChangedCallback;
 
 //todo fix this
 @TargetApi(Build.VERSION_CODES.LOLLIPOP) //camera 2 api was added in API level 21
-class ImageManager implements BaseImageSource, ImageChangedCallback{
+public class ImageManager implements BaseImageSource, ImageChangedCallback{
 
-    private MainActivity mActivity = null;
+    private Activity mActivity = null;
 
     private AndroidCamera mAndroidCamera = null;
     private boolean mStopped = false;
     private Handler mCameraThreadHandler;
+    private ImageChangedCallback mCallback;
 
-    ImageManager(MainActivity activity)
+    public ImageManager(Activity activity, ImageChangedCallback callback)
     {
+        mCallback = callback;
         mActivity = activity;
     }
 
@@ -41,7 +44,7 @@ class ImageManager implements BaseImageSource, ImageChangedCallback{
     }
 
     @Override
-    public void start(int everySecond) throws InterruptedException {
+    public void start(int everySecond){
         startCameraThread();
         submitJob();
 
@@ -72,7 +75,7 @@ class ImageManager implements BaseImageSource, ImageChangedCallback{
 
     @Override
     public void onImageChanged(BaseImage image) {
-        mActivity.onImageChanged(image);
+        mCallback.onImageChanged(image);
         releaseCamera();
         if(!mStopped)
             submitJob();
@@ -80,8 +83,6 @@ class ImageManager implements BaseImageSource, ImageChangedCallback{
 
     @Override
     public void onFailure() {
-
-        mActivity.setText("Failure");
         releaseCamera();
     }
 

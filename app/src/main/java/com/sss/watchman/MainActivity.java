@@ -32,34 +32,24 @@ import factory.Factory;
 /**
  * Entry point Application
  */
-public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback{
-    final BaseFactory factory = new Factory();
-
+public class MainActivity extends AppCompatActivity
+        implements ActivityCompat.OnRequestPermissionsResultCallback,
+        ImageChangedCallback
+{
     final static String TAG = "Watchman";
     private ImageView mImageView;
+    private Watchman mTheApplication;
+    boolean mRunning = false;
+    int m_imageCouner =0;
 
     public static final int PERMISSIONS_REQUEST_ACCESS_CODE = 1;
-    /**
-     * todo remove this
-     */
-    TextView tv;
+    TextView mText;
 
-    /**
-     * todo initialize from factory
-     */
-    ImageManager mImageManager;
-
-
-
-    /**
-     *
-     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        setContentView(R.layout.activity_main);
         Log.d(TAG, "Creating activity");
-
         /**
          * Check if we have all the required permissions
          * We need to check every time, since user can revoke them
@@ -78,39 +68,40 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     @Override
     protected void onDestroy(){
         super.onDestroy();
-        mImageManager.stop();
+        mTheApplication.stop();
     }
 
     public void setText(String text)
     {
-        runOnUiThread(() -> {
-            tv.setText(text);
+        runOnUiThread(() -> mText.setText(text));
+    }
+
+    void subscribeEvents(){
+        // Example of a call to a native method
+        mText = (TextView) findViewById(R.id.sample_text);
+        mImageView = (ImageView) findViewById(R.id.imageView);
+        mImageView.setOnClickListener(v->{});
+
+        final Button btn = (Button) findViewById(R.id.start_button);
+        btn.setOnClickListener(v -> {
+            if(mRunning)
+                mTheApplication.stop();
+            else
+                try {
+                    mTheApplication.start();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            btn.setText(mRunning? "Stop":"Start");
+            mRunning = !mRunning;
         });
+
     }
 
     void init()
     {
-
-        setContentView(R.layout.activity_main);
-        mImageManager = new ImageManager(this);
-
-        // Example of a call to a native method
-        tv = (TextView) findViewById(R.id.sample_text);
-        mImageView = (ImageView) findViewById(R.id.imageView);
-        mImageView.setOnClickListener(v->{});
-        tv.setText("Click Start Button");
-        final Button btn = (Button) findViewById(R.id.start_button);
-        btn.setOnClickListener(v ->
-                {
-                    tv.setText("Button Clicked");
-                    try {
-                        mImageManager.start(1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-        );
+        mTheApplication = new Watchman(this,this);
+        subscribeEvents();
     }
 
     private boolean allPermissionOk() {
@@ -118,10 +109,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         int permissionCheck = ContextCompat.checkSelfPermission(this,
                 Manifest.permission.CAMERA);
 
-        if (permissionCheck == PackageManager.PERMISSION_DENIED)
-            return false;
+        return permissionCheck != PackageManager.PERMISSION_DENIED;
 
-        return true;
     }
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -132,12 +121,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                      init();
                 }
-                else {
-                    //
-                    // No Option left exit
-                    //
-                }
-
             }
         }
     }
@@ -161,8 +144,11 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         }
     }
 
+    @Override
     public void onImageChanged(BaseImage image) {
         runOnUiThread(() -> {
+            m_imageCouner += 1;
+            setText(m_imageCouner + " images received");
             byte[] pictureData = image.getPixels();
             final Bitmap bitmap = BitmapFactory.decodeByteArray(pictureData, 0, pictureData.length);
             final int nh = (int) (bitmap.getHeight() * (512.0 / bitmap.getWidth()));
@@ -170,6 +156,11 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             mImageView.setImageBitmap(scaled);
         });
 
+    }
+
+    @Override
+    public void onFailure() {
+        setText("Error");
     }
 
 }

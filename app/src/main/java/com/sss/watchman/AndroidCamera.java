@@ -122,10 +122,6 @@ class AndroidCamera {
     void startCapturing(final Activity activity,
                         final ImageChangedCallback capturedListener) {
         Log.v(TAG, "Entered startCapturing");
-
-        /*
-
-     */
         Activity mContext = activity;
         mCapturedListener = capturedListener;
 
