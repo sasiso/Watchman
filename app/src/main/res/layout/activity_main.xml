@@ -16,7 +16,8 @@
         android:id="@+id/sample_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:text="Hello World!"
+        android:clickable="false"/>
 
     <Button
         android:text="Start"
@@ -39,5 +40,6 @@
         android:id="@+id/imageView"
         android:layout_above="@+id/start_button"
         android:layout_alignParentEnd="true"
-        android:clickable="false" />
+        android:clickable="false"
+        android:onClick=""/>
 </RelativeLayout>

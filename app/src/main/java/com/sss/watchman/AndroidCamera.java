@@ -46,8 +46,6 @@ class AndroidCamera {
     {
         mBackgroundHandler = handler;
     }
-
-
     /**
      * {@link Log} Tag for logging
      */
@@ -98,7 +96,6 @@ class AndroidCamera {
      */
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
             = new ImageReader.OnImageAvailableListener() {
-
         @Override
         public void onImageAvailable(ImageReader reader) {
             final Image image = reader.acquireLatestImage();
@@ -109,7 +106,6 @@ class AndroidCamera {
             image.close();
             mBackgroundHandler.post(()->sendImage(img));
         }
-
     };
 
     private  void sendImage(BaseImage baseImage)
@@ -119,44 +115,32 @@ class AndroidCamera {
     /**
      *
      */
-    void startCapturing(final Activity activity,
-                        final ImageChangedCallback capturedListener) {
+    void startCapturing(final Activity activity, final ImageChangedCallback capturedListener) {
         Log.v(TAG, "Entered startCapturing");
-
-        /*
-
-     */
-        Activity mContext = activity;
         mCapturedListener = capturedListener;
-
-        mCameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
-        mSindowManager = mContext.getWindowManager();
-
-        /*
-
-     */
-        Queue<String> cameraIds = new LinkedList<>();
+        mCameraManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
+        mSindowManager = activity.getWindowManager();
         try {
-            final String[] cameraIdList = mCameraManager.getCameraIdList();
-            if (cameraIdList != null && cameraIdList.length != 0) {
-
-                for (final String cameraId : cameraIdList) {
-                    CameraCharacteristics characteristics
-                            = mCameraManager.getCameraCharacteristics(cameraId);
-
-                    // We don't use a front facing camera in this sample.
-                    Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                    if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
-                        continue;
-                    }
-                    cameraIds.add(cameraId);
-                }
-                this.mCurrentCameraId = cameraIds.poll();
-                openCameraAndTakePicture();
-            }
+            this.mCurrentCameraId = setCameraToUse();
+            openCameraAndTakePicture();
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
+    }
+
+    private String setCameraToUse() throws CameraAccessException {
+        final String[] cameraIdList = mCameraManager.getCameraIdList();
+        if (cameraIdList.length != 0) {
+            for (final String cameraId : cameraIdList) {
+                CameraCharacteristics c = mCameraManager.getCameraCharacteristics(cameraId);
+                Integer facing = c.get(CameraCharacteristics.LENS_FACING);
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                    continue;
+                }
+                return cameraId;
+            }
+        }
+        return null;
     }
 
     private void openCameraAndTakePicture() {
@@ -193,51 +177,62 @@ class AndroidCamera {
         }
     };
 
+    private Size getPictureSize() throws CameraAccessException {
+        final CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(mCameraDevice.getId());
+        Size[] jpegSizes = null;
+        if (characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) != null) {
+            jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                    .getOutputSizes(ImageFormat.JPEG);
+        }
+        if (jpegSizes != null && 0 < jpegSizes.length) {
+           return jpegSizes[0];
+        }
+        return null;
+    }
+
 
     private void takePicture() {
         try {
-            final CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(mCameraDevice.getId());
-            Size[] jpegSizes = null;
-            if (characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) != null) {
-                jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-                        .getOutputSizes(ImageFormat.JPEG);
-            }
-            int width = 640;
-            int height = 480;
-            if (jpegSizes != null && 0 < jpegSizes.length) {
-                width = jpegSizes[0].getWidth();
-                height = jpegSizes[0].getHeight();
-            }
-
+            Size size = getPictureSize();
+            int width = size != null? size.getWidth() : 640;
+            int height = size!= null ? size.getWidth() : 480;
             mImageReader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
-            final List<Surface> outputSurfaces = new ArrayList<>(2);
-            outputSurfaces.add(mImageReader.getSurface());
-            final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-            captureBuilder.addTarget(mImageReader.getSurface());
-            captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-            final int rotation = this.mSindowManager.getDefaultDisplay().getRotation();
-            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
-
             mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
-            mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
-                @Override
-                public void onConfigured(@NonNull CameraCaptureSession session) {
-                    try {
-                        session.capture(captureBuilder.build(), captureListener, mBackgroundHandler);
-                    } catch (CameraAccessException e) {
-                        e.printStackTrace();
-                    }
-                }
+            createCaptureSession();
 
-                @Override
-                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                    mCapturedListener.onFailure();
-
-                }
-            }, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     *
+     * @throws CameraAccessException
+     */
+    private void createCaptureSession() throws CameraAccessException {
+        final List<Surface> outputSurfaces = new ArrayList<>(2);
+        outputSurfaces.add(mImageReader.getSurface());
+
+        final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+        captureBuilder.addTarget(mImageReader.getSurface());
+        captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+        final int rotation = this.mSindowManager.getDefaultDisplay().getRotation();
+        captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
+
+        mCameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
+            @Override
+            public void onConfigured(@NonNull CameraCaptureSession session) {
+                try {
+                    session.capture(captureBuilder.build(), captureListener, mBackgroundHandler);
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+            @Override
+            public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                mCapturedListener.onFailure();
+            }
+        }, mBackgroundHandler);
     }
 
 
