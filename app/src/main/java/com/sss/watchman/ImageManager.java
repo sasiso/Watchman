@@ -4,11 +4,6 @@ import android.annotation.TargetApi;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Looper;
-
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import Interfaces.BaseImage;
 import Interfaces.BaseImageSource;
@@ -21,14 +16,12 @@ import Interfaces.ImageChangedCallback;
 
 //todo fix this
 @TargetApi(Build.VERSION_CODES.LOLLIPOP) //camera 2 api was added in API level 21
-public class ImageManager implements BaseImageSource, ImageChangedCallback{
+class ImageManager implements BaseImageSource, ImageChangedCallback{
 
-    MainActivity mActivity = null;
+    private MainActivity mActivity = null;
 
-    AndroidCamera mAndroidCamera = null;
-    BaseImage mCurrentImage = null;
-    boolean mStopped = false;
-    private HandlerThread mCameraThread;
+    private AndroidCamera mAndroidCamera = null;
+    private boolean mStopped = false;
     private Handler mCameraThreadHandler;
 
     ImageManager(MainActivity activity)
@@ -54,7 +47,7 @@ public class ImageManager implements BaseImageSource, ImageChangedCallback{
 
     }
 
-    public void startCamera(){
+    private void startCamera(){
         mCameraThreadHandler.post(()->{
             mAndroidCamera = new AndroidCamera(mCameraThreadHandler);
             mAndroidCamera.startCapturing(mActivity,this);
@@ -69,9 +62,9 @@ public class ImageManager implements BaseImageSource, ImageChangedCallback{
     }
 
     private void startCameraThread(){
-        mCameraThread = new HandlerThread("Camera Background thread");
-        mCameraThread.start();
-        mCameraThreadHandler = new Handler(mCameraThread.getLooper());
+        HandlerThread cameraThread = new HandlerThread("Camera Background thread");
+        cameraThread.start();
+        mCameraThreadHandler = new Handler(cameraThread.getLooper());
     }
 
     private  void stopCameraThread() {
@@ -80,7 +73,6 @@ public class ImageManager implements BaseImageSource, ImageChangedCallback{
     @Override
     public void onImageChanged(BaseImage image) {
         mActivity.onImageChanged(image);
-        mCurrentImage = image;
         releaseCamera();
         if(!mStopped)
             submitJob();
@@ -88,6 +80,8 @@ public class ImageManager implements BaseImageSource, ImageChangedCallback{
 
     @Override
     public void onFailure() {
+
+        mActivity.setText("Failure");
         releaseCamera();
     }
 

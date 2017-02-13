@@ -12,7 +12,7 @@ import Interfaces.BaseImageSource;
 
 public class Watchman {
 
-    boolean mStopped = false;
+    private boolean mStopped = false;
 
     /**
      *  Will decide image capture frequency
@@ -22,13 +22,13 @@ public class Watchman {
     /**
      * On what difference alarm will be raised
      */
-    int mAlarmThresholdPercentage = 10;
+    private int mAlarmThresholdPercentage = 10;
 
-    BaseImageSource mImageSource = null;
-    BaseImageCompare mBaseImageCompare =null;
-    BaseImage currImage = null;
-    BaseImage lastImage = null;
-    BaseAlarmManager mAlarmManager= null;
+    private BaseImageSource mImageSource = null;
+    private BaseImageCompare mBaseImageCompare =null;
+    private BaseImage currImage = null;
+    private BaseImage lastImage = null;
+    private BaseAlarmManager mAlarmManager= null;
 
     /**
      *
@@ -56,10 +56,8 @@ public class Watchman {
             // todo this should be event driven rather a while loop
             int diff = mBaseImageCompare.getDifference(lastImage,currImage);
             if( diff > mAlarmThresholdPercentage)
-            {
                 mAlarmManager.raiseAlarm(BaseAlarmManager.FailureType.Breach, diff);
 
-            }
             lastImage = currImage;
         }
 

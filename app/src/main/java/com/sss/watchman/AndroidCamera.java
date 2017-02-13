@@ -16,7 +16,6 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.Size;
@@ -41,7 +40,7 @@ import datatypes.Image8bit;
 
 //todo fix this
 @TargetApi(Build.VERSION_CODES.LOLLIPOP) //camera 2 api was added in API level 21
-public class AndroidCamera {
+class AndroidCamera {
 
     AndroidCamera(Handler handler)
     {
@@ -68,14 +67,6 @@ public class AndroidCamera {
     /**
      *
      */
-    private HandlerThread mBackgroundThread;
-    /**
-     *
-     */
-    private Activity mContext;
-    /**
-     *
-     */
     private WindowManager mSindowManager;
     /**
      *
@@ -93,10 +84,6 @@ public class AndroidCamera {
      *
      */
     private String mCurrentCameraId;
-    /**
-     *
-     */
-    private Queue<String> cameraIds;
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -132,17 +119,23 @@ public class AndroidCamera {
     /**
      *
      */
-    public void startCapturing(final Activity activity,
-                               final ImageChangedCallback capturedListener) {
+    void startCapturing(final Activity activity,
+                        final ImageChangedCallback capturedListener) {
         Log.v(TAG, "Entered startCapturing");
 
-        mContext = activity;
+        /*
+
+     */
+        Activity mContext = activity;
         mCapturedListener = capturedListener;
 
         mCameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
         mSindowManager = mContext.getWindowManager();
 
-        cameraIds = new LinkedList<>();
+        /*
+
+     */
+        Queue<String> cameraIds = new LinkedList<>();
         try {
             final String[] cameraIdList = mCameraManager.getCameraIdList();
             if (cameraIdList != null && cameraIdList.length != 0) {
@@ -156,9 +149,9 @@ public class AndroidCamera {
                     if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
                         continue;
                     }
-                    this.cameraIds.add(cameraId);
+                    cameraIds.add(cameraId);
                 }
-                this.mCurrentCameraId = this.cameraIds.poll();
+                this.mCurrentCameraId = cameraIds.poll();
                 openCameraAndTakePicture();
             }
         } catch (CameraAccessException e) {
@@ -170,9 +163,7 @@ public class AndroidCamera {
         Log.d(TAG, "opening camera " + mCurrentCameraId);
         try {
                 mCameraManager.openCamera(mCurrentCameraId, stateCallback, null);
-            } catch (CameraAccessException e) {
-            Log.e(TAG, " exception opening camera " + mCurrentCameraId + e.getMessage());
-        }catch (SecurityException e) {
+            } catch (CameraAccessException | SecurityException e) {
             Log.e(TAG, " exception opening camera " + mCurrentCameraId + e.getMessage());
         }
     }
@@ -207,11 +198,9 @@ public class AndroidCamera {
         try {
             final CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(mCameraDevice.getId());
             Size[] jpegSizes = null;
-            if (characteristics != null) {
-                if (characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) != null) {
-                    jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-                            .getOutputSizes(ImageFormat.JPEG);
-                }
+            if (characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) != null) {
+                jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                        .getOutputSizes(ImageFormat.JPEG);
             }
             int width = 640;
             int height = 480;

@@ -81,6 +81,13 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         mImageManager.stop();
     }
 
+    public void setText(String text)
+    {
+        runOnUiThread(() -> {
+            tv.setText(text);
+        });
+    }
+
     void init()
     {
 
