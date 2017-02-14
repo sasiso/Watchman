@@ -5,7 +5,7 @@ package Interfaces;
  */
 
 public interface BaseImageSource <T>{
-    abstract public BaseImage<T> getLastImage();
-    abstract public void start(int everySecond) throws InterruptedException;
-    abstract public void stop();
+    BaseImage<T> getLastImage();
+    void start(int everySecond);
+    void stop();
 }

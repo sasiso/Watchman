@@ -5,5 +5,5 @@ package Interfaces;
  */
 
 public interface BaseImageCompare <T>{
-    public abstract int getDifference(final BaseImage<T> one, final BaseImage<T> another);
+    int getDifference(final BaseImage<T> one, final BaseImage<T> another);
 }

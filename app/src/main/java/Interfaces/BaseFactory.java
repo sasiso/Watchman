@@ -8,8 +8,8 @@ import Interfaces.BaseImageSource;
  */
 
 public interface BaseFactory {
-    public abstract BaseAlarmManager getAlertManager();
-    public abstract BaseImageSource getImageSource();
-    public abstract BaseImageCompare getImageCompare();
+    BaseAlarmManager getAlertManager();
+    BaseImageSource getImageSource();
+    BaseImageCompare getImageCompare();
 
 }
