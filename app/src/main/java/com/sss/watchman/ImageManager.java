@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.system.ErrnoException;
 
 import Interfaces.BaseImage;
 import Interfaces.BaseImageSource;
@@ -51,10 +52,18 @@ public class ImageManager implements BaseImageSource, ImageChangedCallback{
     }
 
     private void startCamera(){
-        mCameraThreadHandler.post(()->{
-            mAndroidCamera = new AndroidCamera(mCameraThreadHandler);
-            mAndroidCamera.startCapturing(mActivity,this);
-        });
+        try {
+            mCameraThreadHandler.post(() -> {
+                try {
+                    mAndroidCamera = new AndroidCamera(mCameraThreadHandler);
+                    mAndroidCamera.startCapturing(mActivity, this);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                ;
+
+            });
+        }catch (Exception e){e.printStackTrace();}
     }
 
 
@@ -84,6 +93,10 @@ public class ImageManager implements BaseImageSource, ImageChangedCallback{
     @Override
     public void onFailure() {
         releaseCamera();
+    }
+
+    @Override
+    public void onMessage(String str){
     }
 
     private void releaseCamera()

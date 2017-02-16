@@ -5,6 +5,10 @@ import android.annotation.TargetApi;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Paint;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -27,6 +31,7 @@ import Interfaces.BaseFactory;
 import Interfaces.BaseImage;
 import Interfaces.ImageChangedCallback;
 import factory.Factory;
+import utils.ImageProcessingUtils;
 
 
 /**
@@ -149,11 +154,8 @@ public class MainActivity extends AppCompatActivity
         runOnUiThread(() -> {
             m_imageCouner += 1;
             setText(m_imageCouner + " images received");
-            byte[] pictureData = image.getPixels();
-            final Bitmap bitmap = BitmapFactory.decodeByteArray(pictureData, 0, pictureData.length);
-            final int nh = (int) (bitmap.getHeight() * (512.0 / bitmap.getWidth()));
-            final Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 512, nh, true);
-            mImageView.setImageBitmap(scaled);
+            final byte[] bytes = image.getPixels();
+            mImageView.setImageBitmap(ImageProcessingUtils.toGrayscale(ImageProcessingUtils.fromByteArray_depricated(bytes)));
         });
 
     }
@@ -161,6 +163,11 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onFailure() {
         setText("Error");
+    }
+
+    @Override public void onMessage(String msg){
+        setText(msg);
+
     }
 
 }

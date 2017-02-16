@@ -7,4 +7,5 @@ package Interfaces;
 public interface ImageChangedCallback {
     void onImageChanged(final BaseImage image);
     void onFailure();
+    void onMessage(String message);
 }

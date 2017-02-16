@@ -8,10 +8,10 @@ import java.util.Vector;
  */
 
 public interface BaseImage <T>{
-    abstract int getHeight();
-    abstract int getWidth();
-    abstract List<T> getRow(final int index);
-    abstract List<T> getColumn(final int index);
-    abstract byte[] getPixels();
-    abstract boolean isSame(BaseImage another);
+    int getHeight();
+    int getWidth();
+    List<T> getRow(final int index);
+    List<T> getColumn(final int index);
+    byte[] getPixels();
+    boolean isSame(BaseImage another);
 }

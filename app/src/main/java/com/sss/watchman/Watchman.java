@@ -53,12 +53,14 @@ public class Watchman implements ImageChangedCallback{
                return;
            }
         int diff = mBaseImageCompare.getDifference(lastImage, image);
+
         if( diff > mAlarmThresholdPercentage)
                 mAlarmManager.raiseAlarm(BaseAlarmManager.FailureType.Breach, diff);
 
         lastImage = image;
         try {
             mImageChangedCallback.onImageChanged(image);
+            mImageChangedCallback.onMessage("Last Difference was :"+ diff);
         }catch (Exception e) { e.printStackTrace();}
 
     }
@@ -67,6 +69,9 @@ public class Watchman implements ImageChangedCallback{
     public void onFailure() {
         mImageChangedCallback.onFailure();
         mImageSource.stop();
+
+    }
+    @Override public void onMessage(String msg){
 
     }
 

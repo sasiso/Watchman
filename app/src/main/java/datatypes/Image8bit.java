@@ -13,13 +13,15 @@ public class Image8bit implements BaseImage{
 
     int mHeight = 0;
     int mWidth = 0;
+    int mPixelFormat = 0;
     byte[] mdata = null;
 
-    public Image8bit (int h, int w, byte[] data)
+    public Image8bit (int h, int w, byte[] data, int pixelFormat)
     {
         mHeight= h;
         mWidth= w;
         mdata = data;
+        pixelFormat = pixelFormat;
     }
 
     @Override

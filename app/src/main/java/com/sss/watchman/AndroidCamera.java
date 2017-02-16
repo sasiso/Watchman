@@ -105,7 +105,7 @@ class AndroidCamera {
             final ByteBuffer buffer = image.getPlanes()[0].getBuffer();
             final byte[] bytes = new byte[buffer.capacity()];
             buffer.get(bytes);
-            BaseImage img = new Image8bit(0,0, bytes);
+            BaseImage img = new Image8bit(0,0, bytes, 0/* todo pass actual pixel format*/);
             image.close();
             mBackgroundHandler.post(()->sendImage(img));
         }
