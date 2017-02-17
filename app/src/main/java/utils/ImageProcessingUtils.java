@@ -3,6 +3,7 @@ package utils;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
@@ -47,21 +48,24 @@ public class ImageProcessingUtils {
         return bmpGrayscale;
     }
 
-    static public ByteBuffer getPixels(Bitmap bmp)
+    static public int[] getPixels(Bitmap bmp)
     {
-        ByteBuffer buffer = ByteBuffer.allocate(bmp.getHeight() * bmp.getRowBytes());
-        bmp.copyPixelsToBuffer(buffer);
-        return buffer;
+        final int width = bmp.getWidth();
+        final int height = bmp.getHeight();
+
+        int pixels[] = new int[width * height];
+        bmp.getPixels(pixels, 0, width, 0, 0, width, height);
+        return pixels;
+
     }
 
-    static public SparseIntArray histogram(ByteBuffer buff) {
+    static public SparseIntArray histogram(final int pixels[]) {
 
         SparseIntArray m = new SparseIntArray();
-        int count = buff.capacity();
-        for(int i = 0; i < count; ++i){
-            byte b = buff.get(i);
-            int val = b& 0xFF;
-            m.put(val, m.get(val) + 1);
+        for (int pixel : pixels) {
+            int grey = (int) ((0.21 * Color.red(pixel))
+                    + (0.72 * Color.green(pixel)) + (0.07 * Color.blue(pixel)));
+            m.put(grey, m.get(grey) + 1);
         }
         return m;
     }

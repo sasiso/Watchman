@@ -1,6 +1,7 @@
 package stubs;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 
 import java.nio.ByteBuffer;
 
@@ -14,14 +15,13 @@ import utils.ImageProcessingUtils;
 
 public class ImageCompareStub implements BaseImageCompare {
 
-    public int returnType = 0;
     @Override
     public int getDifference(BaseImage one, BaseImage another) {
-        Bitmap bitmap1 = ImageProcessingUtils.toGrayscale(ImageProcessingUtils.fromByteArray_depricated(one.getPixels()));
-        Bitmap bitmap2 = ImageProcessingUtils.toGrayscale(ImageProcessingUtils.fromByteArray_depricated(one.getPixels()));
+        Bitmap bitmap1 = BitmapFactory.decodeByteArray(one.getPixels(), 0, one.getPixels().length);
+        Bitmap bitmap2 = BitmapFactory.decodeByteArray(another.getPixels(), 0, another.getPixels().length);
 
-        ByteBuffer p1 =  ImageProcessingUtils.getPixels(bitmap1);
-        ByteBuffer p2 =  ImageProcessingUtils.getPixels(bitmap2);
+        int p1[] =  ImageProcessingUtils.getPixels(bitmap1);
+        int p2[] =  ImageProcessingUtils.getPixels(bitmap2);
         return ImageProcessingUtils.compare(ImageProcessingUtils.histogram(p1), ImageProcessingUtils.histogram(p2));
     }
 }

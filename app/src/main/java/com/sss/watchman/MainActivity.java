@@ -89,6 +89,7 @@ public class MainActivity extends AppCompatActivity
 
         final Button btn = (Button) findViewById(R.id.start_button);
         btn.setOnClickListener(v -> {
+            btn.setText(mRunning? "Stop":"Start");
             if(mRunning)
                 mTheApplication.stop();
             else
@@ -97,7 +98,7 @@ public class MainActivity extends AppCompatActivity
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-            btn.setText(mRunning? "Stop":"Start");
+
             mRunning = !mRunning;
         });
 
