@@ -95,7 +95,7 @@ public class MainActivity extends AppCompatActivity
 
     void subscribeEvents(){
         seekBar = (SeekBar)  findViewById(R.id.seekBar);
-        seekBar.setMax(1000);
+        seekBar.setMax(500*500);
         seekBar.setProgress(mTheApplication.getmAlarmThresholdPercentage());
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
