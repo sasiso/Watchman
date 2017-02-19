@@ -1,5 +1,7 @@
 package Interfaces;
 
+import android.graphics.Bitmap;
+
 import java.util.List;
 import java.util.Vector;
 
@@ -14,4 +16,5 @@ public interface BaseImage <T>{
     List<T> getColumn(final int index);
     byte[] getPixels();
     boolean isSame(BaseImage another);
+    Bitmap getBitmap();
 }

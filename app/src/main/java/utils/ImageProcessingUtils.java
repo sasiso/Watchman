@@ -28,7 +28,9 @@ public class ImageProcessingUtils {
     }
 
     public static Bitmap fromByteArray(final byte[] bytes) {
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inMutable = true;
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
     }
 
     static public Bitmap toGrayscale(Bitmap bmpOriginal)

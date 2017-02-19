@@ -30,6 +30,7 @@ import java.util.TreeMap;
 import Interfaces.BaseFactory;
 import Interfaces.BaseImage;
 import Interfaces.ImageChangedCallback;
+import Interfaces.UserInterface;
 import factory.Factory;
 import utils.ImageProcessingUtils;
 
@@ -39,7 +40,7 @@ import utils.ImageProcessingUtils;
  */
 public class MainActivity extends AppCompatActivity
         implements ActivityCompat.OnRequestPermissionsResultCallback,
-        ImageChangedCallback
+        UserInterface
 {
     final static String TAG = "Watchman";
     private ImageView mImageView;
@@ -49,6 +50,7 @@ public class MainActivity extends AppCompatActivity
 
     public static final int PERMISSIONS_REQUEST_ACCESS_CODE = 1;
     TextView mText;
+    TextView mMessageText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,9 +83,16 @@ public class MainActivity extends AppCompatActivity
         runOnUiThread(() -> mText.setText(text));
     }
 
+    public void setMessage(String msg)
+    {
+        runOnUiThread(() -> mMessageText.setText(msg));
+    }
+
+
     void subscribeEvents(){
         // Example of a call to a native method
         mText = (TextView) findViewById(R.id.sample_text);
+        mMessageText = (TextView) findViewById(R.id.message);
         mImageView = (ImageView) findViewById(R.id.imageView);
         mImageView.setOnClickListener(v->{});
 
@@ -151,12 +160,10 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onImageChanged(BaseImage image) {
+    public void onImageChanged(Bitmap image) {
         runOnUiThread(() -> {
-            m_imageCouner += 1;
-            setText(m_imageCouner + " images received");
-            final byte[] bytes = image.getPixels();
-            mImageView.setImageBitmap(ImageProcessingUtils.toGrayscale(ImageProcessingUtils.fromByteArray_depricated(bytes)));
+            setText("Image Received:"+ m_imageCouner++);
+            mImageView.setImageBitmap(image);
         });
 
     }
@@ -167,7 +174,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override public void onMessage(String msg){
-        setText(msg);
+        setMessage(msg);
 
     }
 
