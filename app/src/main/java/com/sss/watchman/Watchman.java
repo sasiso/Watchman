@@ -1,12 +1,14 @@
 package com.sss.watchman;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
 
 import Interfaces.BaseAlarmManager;
 import Interfaces.BaseImage;
 import Interfaces.BaseImageCompare;
 import Interfaces.BaseImageSource;
 import Interfaces.ImageChangedCallback;
+import Interfaces.UserInterface;
 import factory.Factory;
 
 /**
@@ -28,10 +30,10 @@ public class Watchman implements ImageChangedCallback{
     private BaseImageCompare mBaseImageCompare =null;
     private BaseImage lastImage = null;
     private BaseAlarmManager mAlarmManager= null;
-    private ImageChangedCallback mImageChangedCallback = null;
+    private UserInterface mImageChangedCallback = null;
 
 
-    public Watchman(Activity activity, ImageChangedCallback cb)
+    public Watchman(Activity activity, UserInterface cb)
     {
         mImageChangedCallback = cb;
         Factory f = new Factory(activity, this);
@@ -52,15 +54,16 @@ public class Watchman implements ImageChangedCallback{
                lastImage = image;
                return;
            }
-        int diff = mBaseImageCompare.getDifference(lastImage, image);
+        Bitmap toset = mBaseImageCompare.getDifference(lastImage, image);
 
-        if( diff > mAlarmThresholdPercentage)
-                mAlarmManager.raiseAlarm(BaseAlarmManager.FailureType.Breach, diff);
+        //if( diff > mAlarmThresholdPercentage)
+         //       mAlarmManager.raiseAlarm(BaseAlarmManager.FailureType.Breach, diff);
 
         lastImage = image;
         try {
-            mImageChangedCallback.onImageChanged(image);
-            mImageChangedCallback.onMessage("Last Difference was :"+ diff);
+
+            mImageChangedCallback.onImageChanged(toset);
+            mImageChangedCallback.onMessage("Last Difference was :");
         }catch (Exception e) { e.printStackTrace();}
 
     }

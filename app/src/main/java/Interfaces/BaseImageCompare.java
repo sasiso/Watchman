@@ -1,9 +1,11 @@
 package Interfaces;
 
+import android.graphics.Bitmap;
+
 /**
  * Created by satbir on 11/02/17.
  */
 
 public interface BaseImageCompare <T>{
-    int getDifference(final BaseImage<T> one, final BaseImage<T> another);
+    Bitmap getDifference(BaseImage<T> one, BaseImage<T> another);
 }

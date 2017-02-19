@@ -2,6 +2,7 @@ package stubs;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 
 import java.nio.ByteBuffer;
 
@@ -15,13 +16,37 @@ import utils.ImageProcessingUtils;
 
 public class ImageCompareStub implements BaseImageCompare {
 
-    @Override
-    public int getDifference(BaseImage one, BaseImage another) {
-        Bitmap bitmap1 = BitmapFactory.decodeByteArray(one.getPixels(), 0, one.getPixels().length);
-        Bitmap bitmap2 = BitmapFactory.decodeByteArray(another.getPixels(), 0, another.getPixels().length);
+    static int togrey(int pixel){
+        return (int)((0.21 * Color.red(pixel)) +
+                (0.72 *Color.green(pixel)) +
+                (0.07 * Color.blue(pixel)));
+    }
 
-        int p1[] =  ImageProcessingUtils.getPixels(bitmap1);
-        int p2[] =  ImageProcessingUtils.getPixels(bitmap2);
-        return ImageProcessingUtils.compare(ImageProcessingUtils.histogram(p1), ImageProcessingUtils.histogram(p2));
+    @Override
+    public Bitmap getDifference(BaseImage old, BaseImage newer) {
+
+        Bitmap prev = old.getBitmap();
+        Bitmap curr  = newer.getBitmap();
+        assert prev.getWidth() == curr.getWidth();
+        assert prev.getHeight() == curr.getHeight();
+
+        int diff = 0;
+
+        int w = prev.getWidth();
+        int h  = prev.getHeight();
+        Bitmap rv = curr.copy(curr.getConfig(),true);
+
+        for(int y=0; y< h-1; y+=5)
+            for(int x=0; x<w-1;x+=5) {
+                int p1 = togrey(prev.getPixel(x, y));
+                int p2 = togrey(curr.getPixel(x, y));
+                p1 -= p1%10;
+                p2 -=p2%10;
+                if(Math.abs(p1-p2)>10) {
+                    ++diff;
+                    rv.setPixel(x, y, Color.RED);
+                }
+            }
+        return  rv;
     }
 }
