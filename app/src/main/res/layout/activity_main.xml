@@ -10,35 +10,24 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
+    android:background="@color/colorPrimary"
     tools:context="com.sss.watchman.MainActivity">
 
     <TextView
         android:id="@+id/sample_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
+        android:text="Activity detected: "
         android:clickable="false"/>
-
-    <Button
-        android:text="Start"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/sample_text"
-        android:layout_marginStart="76dp"
-        android:layout_marginBottom="32dp"
-        android:id="@+id/start_button" />
 
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:srcCompat="@android:drawable/btn_dialog"
         android:layout_below="@+id/sample_text"
         android:layout_alignParentStart="true"
         android:layout_marginStart="12dp"
         android:layout_marginTop="35dp"
         android:id="@+id/imageView"
-        android:layout_above="@+id/start_button"
         android:layout_alignParentEnd="true"
         android:clickable="false"
         android:onClick=""/>
@@ -47,8 +36,27 @@
         android:id="@+id/message"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
+        android:text="Images processed:"
         android:clickable="false"
         android:layout_below="@+id/sample_text"
         android:layout_alignParentStart="true" />
+
+    <Button
+        android:text="Start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/start_button"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true" />
+
+    <SeekBar
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/start_button"
+        android:layout_alignParentStart="true"
+        android:id="@+id/seekBar"
+        android:layout_alignParentEnd="true" />
+
+
 </RelativeLayout>

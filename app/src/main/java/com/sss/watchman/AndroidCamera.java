@@ -193,8 +193,8 @@ class AndroidCamera {
 
     private void takePicture() {
         try {
-            int width = 100;
-            int height = 100;
+            int width = 500;
+            int height = 500;
 
 
             mImageReader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);

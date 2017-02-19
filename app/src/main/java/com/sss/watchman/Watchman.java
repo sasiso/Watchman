@@ -24,7 +24,7 @@ public class Watchman implements ImageChangedCallback{
     /**
      * On what difference alarm will be raised
      */
-    private int mAlarmThresholdPercentage = 10;
+    private int mAlarmThresholdPercentage = 5000;
 
     private BaseImageSource mImageSource = null;
     private BaseImageCompare mBaseImageCompare =null;
@@ -44,6 +44,15 @@ public class Watchman implements ImageChangedCallback{
         mImageIntervalSec = 1;
     }
 
+    public void setmAlarmThresholdPercentage(final int val){
+        mAlarmThresholdPercentage = val;
+    }
+
+    public int getmAlarmThresholdPercentage(){
+       return mAlarmThresholdPercentage;
+    }
+
+
     void start() throws InterruptedException {
         mImageSource.start(mImageIntervalSec);
     }
@@ -54,16 +63,17 @@ public class Watchman implements ImageChangedCallback{
                lastImage = image;
                return;
            }
-        Bitmap toset = mBaseImageCompare.getDifference(lastImage, image);
+        BaseImageCompare.Result result = mBaseImageCompare.getDifference(lastImage, image);
 
-        //if( diff > mAlarmThresholdPercentage)
-         //       mAlarmManager.raiseAlarm(BaseAlarmManager.FailureType.Breach, diff);
+        if( result.diff > mAlarmThresholdPercentage){
+            mAlarmManager.raiseAlarm(BaseAlarmManager.FailureType.Breach, result.diff);
+        }
+        mImageChangedCallback.onDifference(result.diff);
+
 
         lastImage = image;
         try {
-
-            mImageChangedCallback.onImageChanged(toset);
-            mImageChangedCallback.onMessage("Last Difference was :");
+            mImageChangedCallback.onImageChanged(result.bmp);
         }catch (Exception e) { e.printStackTrace();}
 
     }

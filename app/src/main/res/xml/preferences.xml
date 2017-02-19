@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditTextPreference
+        android:dialogTitle="My preference"
+        android:key="pref"
+        android:summary="Enter Your Preference"
+        android:title="Edit Text Preference" />
+
+    <EditTextPreference
+        android:dialogTitle="My preference"
+        android:key="pref"
+        android:summary="Enter Your Preference"
+        android:title="Edit Text Preference" />
+</PreferenceScreen>
