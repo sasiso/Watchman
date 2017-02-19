@@ -23,18 +23,17 @@ public class ImageCompareStub implements BaseImageCompare {
     }
 
     @Override
-    public Bitmap getDifference(BaseImage old, BaseImage newer) {
+    public Result getDifference(BaseImage old, BaseImage newer) {
 
         Bitmap prev = old.getBitmap();
         Bitmap curr  = newer.getBitmap();
         assert prev.getWidth() == curr.getWidth();
         assert prev.getHeight() == curr.getHeight();
 
-        int diff = 0;
-
         int w = prev.getWidth();
         int h  = prev.getHeight();
-        Bitmap rv = curr.copy(curr.getConfig(),true);
+        Result rv = new Result();
+        rv.bmp = curr.copy(curr.getConfig(),true);
 
         for(int y=0; y< h-1; y+=5)
             for(int x=0; x<w-1;x+=5) {
@@ -43,8 +42,8 @@ public class ImageCompareStub implements BaseImageCompare {
                 p1 -= p1%10;
                 p2 -=p2%10;
                 if(Math.abs(p1-p2)>10) {
-                    ++diff;
-                    rv.setPixel(x, y, Color.RED);
+                    rv.diff +=1;
+                    rv.bmp.setPixel(x, y, Color.RED);
                 }
             }
         return  rv;

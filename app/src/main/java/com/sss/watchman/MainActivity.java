@@ -11,6 +11,7 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -18,6 +19,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -47,6 +49,7 @@ public class MainActivity extends AppCompatActivity
     private Watchman mTheApplication;
     boolean mRunning = false;
     int m_imageCouner =0;
+    SeekBar seekBar = null;
 
     public static final int PERMISSIONS_REQUEST_ACCESS_CODE = 1;
     TextView mText;
@@ -55,6 +58,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
         setContentView(R.layout.activity_main);
         Log.d(TAG, "Creating activity");
         /**
@@ -90,6 +94,28 @@ public class MainActivity extends AppCompatActivity
 
 
     void subscribeEvents(){
+        seekBar = (SeekBar)  findViewById(R.id.seekBar);
+        seekBar.setMax(1000);
+        seekBar.setProgress(mTheApplication.getmAlarmThresholdPercentage());
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // TODO Auto-generated method stub
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // TODO Auto-generated method stub
+            }
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress,boolean fromUser) {
+                // TODO Auto-generated method stub
+                mTheApplication.setmAlarmThresholdPercentage(progress);
+
+
+            }});
         // Example of a call to a native method
         mText = (TextView) findViewById(R.id.sample_text);
         mMessageText = (TextView) findViewById(R.id.message);
@@ -98,7 +124,7 @@ public class MainActivity extends AppCompatActivity
 
         final Button btn = (Button) findViewById(R.id.start_button);
         btn.setOnClickListener(v -> {
-            btn.setText(mRunning? "Stop":"Start");
+            btn.setText(mRunning? "Start":"Stop");
             if(mRunning)
                 mTheApplication.stop();
             else
@@ -175,6 +201,11 @@ public class MainActivity extends AppCompatActivity
 
     @Override public void onMessage(String msg){
         setMessage(msg);
+
+    }
+    @Override
+    public void onDifference(int diff){
+        setMessage("Activity detected:"+ diff);
 
     }
 

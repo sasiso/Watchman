@@ -26,7 +26,7 @@ public class Factory  implements BaseFactory{
      * Creates concrete instances of various implementations
      */
     public Factory(Activity activity, ImageChangedCallback callback){
-        mAlarmManager = new AlarmManagerStub();
+        mAlarmManager = new AlarmManagerStub(activity);
         mImageCompare = new ImageCompareStub();
         mImageSource  = new ImageManager(activity, callback);
     }

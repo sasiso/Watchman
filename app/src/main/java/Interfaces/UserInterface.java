@@ -10,4 +10,5 @@ public interface UserInterface {
     void onImageChanged(Bitmap image);
     void onFailure();
     void onMessage(String message);
+    void onDifference(int diff);
 }
